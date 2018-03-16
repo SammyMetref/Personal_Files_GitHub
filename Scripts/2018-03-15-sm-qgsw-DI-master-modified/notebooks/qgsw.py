@@ -44,9 +44,10 @@ def qgsw(Hi=None, c=None, lon=None, lat=None, tint=None, dtout=None, dt=None,obs
             hg[iobs]=griddata((lon.ravel(), lat.ravel()), h.ravel(), (obsspace[iobs,0].squeeze(), obsspace[iobs,1].squeeze()))
     else:
         hg=None 
-    nindex_time=abs(tint)/dtout + 1 
-    
-    SSH=np.empty((nindex_time,grd.ny,grd.nx)) 
+    nindex_time=np.int(abs(tint)/dtout + 1) 
+    grdnx=np.int(grd.nx)
+    grdny=np.int(grd.ny)
+    SSH=np.empty((nindex_time,grdny,grdnx)) 
     SSH[index_time,:,:]=Hi  
 
     nstep=int(abs(tint)/dt)
