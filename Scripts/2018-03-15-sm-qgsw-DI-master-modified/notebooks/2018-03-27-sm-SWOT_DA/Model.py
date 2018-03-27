@@ -32,7 +32,7 @@ def EnsembleModel(function,state_vectors0_names,n_ens,time0,*args):
     state_vectors_names='TMP_DA/state_vectors.nc'
     ncout = nc.Dataset(state_vectors_names, 'w', format='NETCDF3_CLASSIC')
     ncout.createDimension('member', n_ens)
-    ncens = ncout.createVariable('ens', 'f', ('member',))
+    ncens = ncout.createVariable('ens', 'd', ('member',))
     ncens[:] = range(n_ens) 
         
     for i_ens in range(n_ens):  

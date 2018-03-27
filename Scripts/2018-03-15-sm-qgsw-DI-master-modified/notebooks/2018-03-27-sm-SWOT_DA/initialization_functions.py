@@ -18,7 +18,7 @@ def Initialization(function,n_ens,*args):
             n_ensemble (integer): number of ensemble members
 
         Returns:
-            state_vectors0_names(string): path and name of the state_vectors0 files   
+            function(n_ens,*args): output of *function*   
     """            
             
     return function(n_ens,*args)
@@ -62,7 +62,7 @@ def NATL60state(n_ens=1):
     ncout.createDimension('x', lon.shape[0])
     ncout.createDimension('y', lat.shape[1])
     ncout.createDimension('member', n_ens)
-    ncens = ncout.createVariable('ens', 'f', ('member',))  
+    ncens = ncout.createVariable('ens', 'd', ('member',))  
     nclon = ncout.createVariable('nav_lon', 'f', ('x','y',))
     nclat = ncout.createVariable('nav_lat', 'f', ('x','y',)) 
     nclat[:,:] = lat 
