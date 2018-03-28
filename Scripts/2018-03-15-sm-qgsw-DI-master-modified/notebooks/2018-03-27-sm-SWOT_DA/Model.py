@@ -1,17 +1,17 @@
 ################################
-# SSH initialization functions #
+#       Model functions        #
 ################################ 
 import sys,os,shutil
 sys.path.insert(0,'/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/2018-03-27-sm-SWOT_DA/') 
-import numpy as np
-#import qgsw
+import numpy as np 
 import netCDF4 as nc
 
-# Model specific libraries
-from importlib.machinery import SourceFileLoader 
-qgsw = SourceFileLoader("qgsw", "/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/notebooks/Models/qgsw.py").load_module() 
+# Model specific libraries 
+from modelQG_libraries import *
 
-def EnsembleModel(function,state_vectors0_names,n_ens,time0,*args):
+
+
+def EnsembleModel(function,state_vectors0_names,n_ens,time0,state_vectors_names,*args):
     """
     NAME 
         EnsembleModel 
@@ -29,7 +29,7 @@ def EnsembleModel(function,state_vectors0_names,n_ens,time0,*args):
             state_vectors_names (string): ensemble of path and names of the propagated state_vectors files (all members)
 
     """   
-    state_vectors_names='TMP_DA/state_vectors.nc'
+    
     ncout = nc.Dataset(state_vectors_names, 'w', format='NETCDF3_CLASSIC')
     ncout.createDimension('member', n_ens)
     ncens = ncout.createVariable('ens', 'd', ('member',))
@@ -66,7 +66,7 @@ def QG_SW(state_vectors0_names,time0,i_ens,ncout):
             None
 
     """      
-     
+    
     fid_deg = nc.Dataset(state_vectors0_names)
     lon2d=np.array(fid_deg.variables["nav_lon"][:,:]) 
     lat2d=np.array(fid_deg.variables["nav_lat"][:,:])   
@@ -80,6 +80,9 @@ def QG_SW(state_vectors0_names,time0,i_ens,ncout):
     # Model propagation
     propagated_SSH, trash = qgsw.qgsw(Hi=current_SSH, c=c, lon=lon2d, lat=lat2d, tint=time0, dtout=deltat, dt=dtmodel,rappel=None,snu=0.) 
     
+    print(propagated_SSH[0,:,:])
+     
+    
     if i_ens==0:
         ncout.createDimension('x', lon2d.shape[0])
         ncout.createDimension('y', lat2d.shape[1])   
@@ -88,7 +91,7 @@ def QG_SW(state_vectors0_names,time0,i_ens,ncout):
         nchei = ncout.createVariable('degraded_sossheig', 'f', ('member','x','y',)) 
         nclat[:,:] = lat2d 
         nclon[:,:] = lon2d   
-        nchei[i_ens,:,:] = propagated_SSH[-1,:,:] 
+        nchei[i_ens,:,:] = propagated_SSH[0,:,:] 
     else:    
         ncout.variables["degraded_sossheig"][i_ens,:,:]= propagated_SSH[-1,:,:] 
      

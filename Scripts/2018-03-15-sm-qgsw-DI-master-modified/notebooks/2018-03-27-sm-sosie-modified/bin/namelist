@@ -166,7 +166,7 @@ ismooth   = 0
 !!
 &nhtarget
 lregout    = F
-cf_x_out   = '/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/SwotSimulator/example/swot_output/swot292-OSMOSIS_c01_p003.nc'
+cf_x_out   = '/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/SwotSimulator/example/swot_output/swot292-OSMOSIS_c01_p059.nc'
 cv_lon_out = 'lon'
 cv_lat_out = 'lat'
 cf_lsm_out = 'missing_value' !

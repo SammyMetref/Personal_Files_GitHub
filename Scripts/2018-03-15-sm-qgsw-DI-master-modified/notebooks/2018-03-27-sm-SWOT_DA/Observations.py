@@ -3,7 +3,7 @@
 ################################
 import netCDF4 as nc
 import numpy as np
-import os.path
+import os.path 
 
 
 def ObservationCheck(time1,deltat,observationpath,observationprefixe,ncycle,pass_names,initobsdate):
@@ -31,9 +31,7 @@ def ObservationCheck(time1,deltat,observationpath,observationprefixe,ncycle,pass
     
     time1mdeltat_seconds_fromfirstobs=(time1-deltat/2-initobsdate).total_seconds()
     time1pdeltat_seconds_fromfirstobs=(time1+deltat/2-initobsdate).total_seconds()
-    
-    #print(time1mdeltat_seconds_fromfirstobs)
-    #print(time1pdeltat_seconds_fromfirstobs)
+     
     
     obs_encountered=0 
     file_obs=np.array([])
@@ -78,7 +76,7 @@ def GetObsTime(observation_path,observation_name):
     return obstime
 
 
-def ObsOperator(function,state_vectors_names,observation_name,n_ens,*args):
+def ObsOperator(function,state_vectors_names,observation_name,tmp_DA_path,sosie_path,name_sosie_output,name_sosie_map,n_ens,*args):
     """
     NAME 
         ObsOperator 
@@ -96,10 +94,10 @@ def ObsOperator(function,state_vectors_names,observation_name,n_ens,*args):
             function(state_vectors_names,n_ens,*args): output of *function*  
     """            
             
-    return function(state_vectors_names,observation_name,n_ens,*args)
+    return function(state_vectors_names,observation_name,tmp_DA_path,sosie_path,name_sosie_output,name_sosie_map,n_ens,*args)
 
 
-def ObsOperator_SOSIE_SWOT(state_vectors_names,observation_name,n_ens=1):
+def ObsOperator_SOSIE_SWOT(state_vectors_names,observation_name,tmp_DA_path,sosie_path,name_sosie_output,name_sosie_map,n_ens=1):
     """
     NAME 
         ObsOperator_SOSIE_SWOT
@@ -116,46 +114,68 @@ def ObsOperator_SOSIE_SWOT(state_vectors_names,observation_name,n_ens=1):
             state_projections_names (array of strings): path and names of model state projection onto the SWOT observation plane 
 
     """
+    ## In construction 
+    ## To be moved in params.py 
+    ## 
+    #
+    # temporary data assimilation directory path 
+    #tmp_DA_path="/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/notebooks/2018-03-27-sm-SWOT_DA/TMP_DA/"
+
+    # SOSIE path
+    #sosie_path="/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/notebooks/2018-03-27-sm-sosie-modified/bin/" 
+    # name of SOSIE output
+    #name_sosie_output="ssh_QG-OSMOSIS-SWOT-SWATH_bilin.nc"
+    # name of SOSIE map
+    #name_sosie_map="../sosie_mapping_QG-OSMOSIS-SWOT-SWATH.nc"
+    #
+    ##
     
-    sosie_path="/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/notebooks/2018-03-27-sm-sosie-modified/bin/"
-    tmp_path="/Users/sammymetref/Documents/Boost-Swot/Notebooks/GitHub/Personal_Files/2018/Scripts/2018-03-15-sm-qgsw-DI-master-modified/notebooks/2018-03-27-sm-SWOT_DA/TMP_DA/"
+    # Path and names 
     str_observation_name="'"+observation_name+"'"
     
     state_projection_names=[]
     for i_ens in range(n_ens):
         
+        # Erasing previous state_projection
+        name_output="state_projections_"+str(i_ens).zfill(2)+".nc"
+        cmd1="rm "+tmp_DA_path+name_output    
+        os.system(cmd1)
+        
         # Seperating state_vectors by ensemble member
         stringiens=str(i_ens).zfill(2)
-        state_projection_name=state_vectors_names[:-4]+"_"+stringiens+".nc"
-        str_state_projection_name="'"+state_vectors_names[:-4]+"_"+stringiens+".nc'"
+        state_vector_iens_name=state_vectors_names[:-4]+"_"+stringiens+".nc"
+        str_state_vector_iens_name="'"+state_vectors_names[:-4]+"_"+stringiens+".nc'"
         
-        state_projection_names=np.append(state_projection_names,state_projection_name)
-        cmd1="ncks -d member,"+stringiens+","+stringiens+" "+state_vectors_names+" "+state_projection_name
-        os.system(cmd1) 
+        cmd2="ncks -d member,"+stringiens+","+stringiens+" "+state_vectors_names+" "+state_vector_iens_name 
+        os.system(cmd2) 
         
-        # Creating SOSIE namelist
-        name_source=state_vectors_names+"_"+stringiens
-        name_target=observation_name
-        
+        file=state_vector_iens_name 
+        if os.path.isfile(file)==False:
+            print('Error: No state_vector'+str(i_ens).zfill(2)+' file in '+tmp_DA_path) 
+        # Modifying SOSIE namelist  
         with open(sosie_path+"namelist", 'r') as file: 
             data = file.readlines() 
-        data[101] = "cf_in     = "+str_state_projection_name+"\n"
-        data[107] = "cf_x_in   = "+str_state_projection_name+"\n"
-        data[168] = "cf_x_out   = "+str_observation_name+"\n" 
+        data[101] = "cf_in     = "+str_state_vector_iens_name+"\n" # modify source.nc 
+        data[107] = "cf_x_in   = "+str_state_vector_iens_name+"\n" # modify source.nc
+        data[168] = "cf_x_out   = "+str_observation_name+"\n"      # modify target.nc 
         with open(sosie_path+"namelist", 'w') as file:
             file.writelines( data ) 
                
         # Running SOSIE 
-        cmd6=sosie_path+"sosie.x -f "+sosie_path+"namelist"
-        os.system(cmd6)  
+        cmd3=sosie_path+"sosie.x -f "+sosie_path+"namelist"
+        os.system(cmd3)  
             
         # Renaming SOSIE output as the i_ens state_projection
-        name_output="state_projections_"+str(i_ens).zfill(2)+".nc"
-        cmd7="mv "+tmp_path+"ssh_QG-OSMOSIS-SWOT-SWATH_bilin.nc "+tmp_path+name_output
-        os.system(cmd7)  
+        cmd4="mv "+tmp_DA_path+name_sosie_output+" "+tmp_DA_path+name_output 
+        os.system(cmd4)  
+        
+        state_projection_names=np.append(state_projection_names,tmp_DA_path+name_output) 
             
     # Erasing SOSIE map 
-    cmd8="rm "+tmp_path+"../sosie_mapping_QG-OSMOSIS-SWOT-SWATH.nc"    
-    os.system(cmd8)
+    cmd5="rm "+tmp_DA_path+name_sosie_map    
+    os.system(cmd5)
     
-    return
+    return state_projection_names
+
+
+             
